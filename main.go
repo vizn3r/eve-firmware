@@ -4,11 +4,13 @@ import (
 	"bufio"
 	"eve-firmware/arm"
 	"eve-firmware/cmds"
+	"eve-firmware/com"
 	"fmt"
 	"os"
 	"os/exec"
 	"runtime"
 	"strings"
+	"sync"
 )
 
 var ASCII = "\n" + `_____________    ____________       __________________________ ______  ______       _________ ________ __________
@@ -19,6 +21,9 @@ _  /___   __ |/ /  _  /___          _  __/    __/ /   _  _, _/ _  /  / /  __ |/ 
 
 
 func main() {
+	var wg sync.WaitGroup
+	go com.StartWS(&wg)
+	
 	arm.InitMotors()
 	if len(os.Args) > 1 {
 		cmds.ResolveCmds(os.Args[1:])
@@ -42,4 +47,5 @@ func main() {
 			cmds.ResolveCmds(strings.Split(strings.TrimSpace(s.Text()), " "))
 		}
 	}
+	wg.Wait()	
 }
