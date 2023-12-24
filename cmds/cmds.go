@@ -13,42 +13,46 @@ type CommandCtx struct {
 	Args  []string
 }
 
-type Command struct {
-	Call    byte
-	NumArgs []int
-	Funcs   []func(c CommandCtx) string
+type CommandFunc struct {
+	NumArgs int
+	Func func(c CommandCtx) string
 }
 
-/* 	
-	DONT FORGET NumArgs WHEN ADDING func
-	
-	there is no checking for that :P
+type Command struct {
+	Call    byte
+	Funcs   []CommandFunc
+}
 
-	should probably rework this in future, but it is fine for now :D
-*/
 var COMMANDS = []Command {
 	{
 		// Test commands
 		Call: 'T',
-		NumArgs: []int{1, 0, 1},		
-		Funcs: []func(CommandCtx) string{
-			func(c CommandCtx) string {
-				return "test return: " + c.Args[0]
+		Funcs: []CommandFunc{
+			{
+				NumArgs: 1,
+				Func: func(c CommandCtx) string {
+					return "test return: " + c.Args[0]
+				},
 			},
-			func(c CommandCtx) string {
-				return "test return 2"
+			{
+				NumArgs: 0,
+				Func: func(c CommandCtx) string {
+					return "test return 2"
+				},
 			},
 		},
 	},
 	{
 		Call: 'S',
-		NumArgs: []int{0},
-		Funcs: []func(c CommandCtx) string{
-			func(c CommandCtx) string {
-				if util.Prompt("Do you want to exit?") {
-					os.Exit(0)		
-				}
-				return ""
+		Funcs: []CommandFunc {
+			{
+				NumArgs: 0,
+				Func: func(c CommandCtx) string {
+					if util.Prompt("Do you want to exit?") {
+						os.Exit(0)		
+					}
+					return ""
+				},
 			},
 		},
 	},
@@ -90,20 +94,20 @@ func ResolveCmds(rawArgs []string) {
 			fmt.Println("err: Invalid command index '" + a[1:] + "'")
 			continue
 		} else { index = j }
-		if len(rawArgs[i + 1:]) < cmd.NumArgs[index] {
+		if len(rawArgs[i + 1:]) < cmd.Funcs[index].NumArgs {
 			fmt.Println("err: Not enough args")
 			continue
 		}
 
 		// []string for Command from rawArgs
-		args := rawArgs[i + 1 : i + cmd.NumArgs[index] + 1]
+		args := rawArgs[i + 1 : i + cmd.Funcs[index].NumArgs + 1]
 
-		msg := cmd.Funcs[index](CommandCtx{index, args})
+		msg := cmd.Funcs[index].Func(CommandCtx{index, args})
 		if msg != "" {
 			fmt.Println(a, "out:", msg)
 		}
 
 		// Move i by NumArgs to next rawArg
-		i += cmd.NumArgs[index]
+		i += cmd.Funcs[index].NumArgs
 	}
 }

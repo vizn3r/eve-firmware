@@ -34,7 +34,7 @@ func main() {
 		c.Run()
 	}
 
-	fmt.Print(ASCII + "\n\nEVE Firmware v0.0.1\nby vizn3r 2023\n\n")
+	fmt.Print(ASCII + "\n\nEVE Firmware v0.0.2\nby vizn3r 2023\n\n")
 
 	var s = bufio.NewScanner(os.Stdin)
 	for {

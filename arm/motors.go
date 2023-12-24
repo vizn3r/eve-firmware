@@ -31,16 +31,18 @@ func InitMotors() {
 	cmds.COMMANDS = append(cmds.COMMANDS, MotorCommands...)
 	cmds.COMMANDS = append(cmds.COMMANDS, cmds.Command{
 		Call: 'M',
-		NumArgs: []int{1},
-		Funcs: []func(c cmds.CommandCtx) string{
-			func(c cmds.CommandCtx) string {
-				switch strings.ToUpper(c.Args[0]) {
-				case "F":
-					return "Forward"
-				case "R":
-					return "Reverse"
-				}
-				return "err: Invalid argument '" + c.Args[0] + "'"
+		Funcs: []cmds.CommandFunc {
+			{
+				NumArgs: 1,
+				Func: func(c cmds.CommandCtx) string {
+					switch strings.ToUpper(c.Args[0]) {
+					case "F":
+						return "Forward"
+					case "R":
+						return "Reverse"
+					}
+					return "err: Invalid argument '" + c.Args[0] + "'"
+				},
 			},
 		},
 	})
