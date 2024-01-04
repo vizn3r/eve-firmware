@@ -77,7 +77,7 @@ func CmdHas(cmds []Command, c Command) (bool, Command) {
 }
 
 func ResolveCmds(rawArgs []string) []string {
-	if len(rawArgs) == 0 || rawArgs == nil || rawArgs[0] == "" {
+	if len(rawArgs) == 0 {
 		return []string{}
 	}
 	out := []string{}

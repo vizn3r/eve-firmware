@@ -9,7 +9,7 @@ import (
 // Pins for motor driver
 type Motor struct {
 	Step int
-	Dir int
+	Dir  int
 
 	Micro1 int
 	Micro2 int
@@ -23,15 +23,9 @@ type MotorConfig struct {
 }
 
 var MotorCommands = []cmds.Command{
-	
-}
-
-// Pull motor config from conf.json and append to COMMANDS
-func InitMotors() {
-	cmds.COMMANDS = append(cmds.COMMANDS, MotorCommands...)
-	cmds.COMMANDS = append(cmds.COMMANDS, cmds.Command{
+	{
 		Call: 'M',
-		Funcs: []cmds.CommandFunc {
+		Funcs: []cmds.CommandFunc{
 			{
 				NumArgs: 1,
 				Func: func(c cmds.CommandCtx) string {
@@ -45,7 +39,13 @@ func InitMotors() {
 				},
 			},
 		},
-	})
+	},
+}
+
+// Pull motor config from conf.json and append to COMMANDS
+func InitMotors() {
+	cmds.COMMANDS = append(cmds.COMMANDS, MotorCommands...)
 	var motorCfg MotorConfig
 	util.ParseJSON("./conf/motors.json", motorCfg)
 }
+
