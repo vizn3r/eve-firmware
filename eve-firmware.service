@@ -1,0 +1,12 @@
+[Unit]
+Description="Eve-Firmware is used to control robotic arm from RaspberryPi"
+After=network.target
+
+[Service]
+TimeoutStartSec=0
+Type=notify
+ExecStart=/home/simon/eve-firmware-linux-arm
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target

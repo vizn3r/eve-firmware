@@ -1,62 +1,34 @@
 package cmds
 
 import (
-	"eve-firmware/util"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 )
 
 type CommandCtx struct {
-	Index int
-	Args  []string
+	Index     int
+	Args      []string
+	IntArgs   []int
+	FloatArgs []float64
 }
 
 type CommandFunc struct {
 	NumArgs int
+	Args    string
+	Desc    string
 	Func    func(c CommandCtx) string
 }
 
 type Command struct {
 	Call  byte
 	Funcs []CommandFunc
+	Cli   bool
 }
 
-var COMMANDS = []Command{
-	{
-		// Test commands
-		Call: 'T',
-		Funcs: []CommandFunc{
-			{
-				NumArgs: 1,
-				Func: func(c CommandCtx) string {
-					return "test return: " + c.Args[0]
-				},
-			},
-			{
-				NumArgs: 0,
-				Func: func(c CommandCtx) string {
-					return "test return 2"
-				},
-			},
-		},
-	},
-	{
-		Call: 'S',
-		Funcs: []CommandFunc{
-			{
-				NumArgs: 0,
-				Func: func(c CommandCtx) string {
-					if util.Prompt("Do you want to exit?") {
-						os.Exit(0)
-					}
-					return ""
-				},
-			},
-		},
-	},
-}
+type Commands []Command
+
+var COMMANDS Commands
 
 func (c *CommandCtx) HasArg(arg string) bool {
 	for _, a := range c.Args {
@@ -89,25 +61,42 @@ func ResolveCmds(rawArgs []string) []string {
 
 		if has, c := CmdHas(COMMANDS, Command{Call: a[0]}); !has {
 			fmt.Println("err: Invalid command '" + a + "'")
+			out = append(out, "err: Invalid comand '"+a+"'")
 			continue
 		} else {
 			cmd = c
 		}
 		if j, e := strconv.Atoi(a[1:]); e != nil || j >= len(cmd.Funcs) {
 			fmt.Println("err: Invalid command index '" + a[1:] + "'")
+			out = append(out, "err: Invalid command index '"+a[:1]+"'")
 			continue
 		} else {
 			index = j
 		}
 		if len(rawArgs[i+1:]) < cmd.Funcs[index].NumArgs {
-			fmt.Println("err: Not enough args")
+			fmt.Println("err: Not enough args, need", cmd.Funcs[index].Args)
+			out = append(out, "err: Not enough args, need", cmd.Funcs[index].Args)
 			continue
 		}
 
 		// []string for Command from rawArgs
 		args := rawArgs[i+1 : i+cmd.Funcs[index].NumArgs+1]
+		var intArgs []int
+		var floatArgs []float64
+		for _, arg := range args {
+			i, err := strconv.Atoi(arg)
+			if err != nil {
+				i = 0
+			}
+			j, err := strconv.ParseFloat(arg, 64)
+			if err != nil {
+				j = 0.0
+			}
+			intArgs = append(intArgs, i)
+			floatArgs = append(floatArgs, j)
+		}
 
-		msg := cmd.Funcs[index].Func(CommandCtx{index, args})
+		msg := cmd.Funcs[index].Func(CommandCtx{index, args, intArgs, floatArgs})
 		if msg != "" {
 			fmt.Println(msg)
 		}
