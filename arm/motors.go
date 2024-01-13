@@ -11,10 +11,10 @@ import (
 
 // Pins for motor driver
 type Motor struct {
-	Step      int
-	StepAngle float64
-	Dir       int
-	Diag      int
+	Step  int
+	Angle float64
+	Dir   int
+	Diag  int
 }
 
 type Direction int
@@ -117,7 +117,7 @@ func (m *Motor) DriveAngle(angle Angle, delay float64, dir Direction) {
 		return
 	}
 	defer gpio.Close()
-	for i := 0.0; i <= angle.Degrees(); i += m.StepAngle {
+	for i := 0.0; i <= angle.Degrees(); i += m.Angle {
 		if err := m.DoStep(delay); err != nil {
 			fmt.Println(err)
 			return
@@ -132,9 +132,9 @@ func (m *Motor) Drive(angle Angle, time float64, dir Direction) {
 		return
 	}
 	defer gpio.Close()
-	rotations := angle.Degrees() / m.StepAngle
+	rotations := angle.Degrees() / m.Angle
 	delay := time / rotations
-	for i := 0.0; i <= angle.Degrees(); i += m.StepAngle {
+	for i := 0.0; i <= angle.Degrees(); i += m.Angle {
 		if err := m.DoStep(delay); err != nil {
 			fmt.Println(err)
 			return

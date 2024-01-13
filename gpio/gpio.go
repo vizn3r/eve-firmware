@@ -1,4 +1,4 @@
-package GPIO
+package gpio
 
 import (
 	"bufio"

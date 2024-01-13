@@ -2,10 +2,10 @@ package main
 
 import (
 	"bufio"
-	"eve-firmware/GPIO"
 	"eve-firmware/arm"
 	"eve-firmware/cmds"
 	"eve-firmware/com"
+	"eve-firmware/gpio"
 	"eve-firmware/util"
 	"fmt"
 	"os"
@@ -112,7 +112,7 @@ func main() {
 					Desc:    "Open pin",
 					Args:    "<pin, mode>",
 					Func: func(c cmds.CommandCtx) string {
-						if err := GPIO.Open(c.IntArgs[0]); err != nil {
+						if err := gpio.Open(c.IntArgs[0]); err != nil {
 							return err.Error()
 						}
 						return ""
@@ -123,7 +123,7 @@ func main() {
 					Desc:    "Write to pin",
 					Args:    "<pin, value>",
 					Func: func(c cmds.CommandCtx) string {
-						if err := GPIO.Write(c.IntArgs[0], c.Args[1]); err != nil {
+						if err := gpio.Write(c.IntArgs[0], c.Args[1]); err != nil {
 							return err.Error()
 						}
 						return ""
