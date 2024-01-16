@@ -46,7 +46,7 @@ func StartWS(wg *sync.WaitGroup) {
 			}
 			log.Printf("WebSocket: \"%s\"", msg)
 
-			res := cmds.ResolveCmds(strings.Split(string(msg), " "))
+			res := cmds.ResolveCmds(strings.Split(string(msg), " "), cmds.FUNCTIONAL)
 
 			if err = c.WriteMessage(mt, []byte(strings.Join(res, "\n"))); err != nil {
 				log.Println("write:", err)

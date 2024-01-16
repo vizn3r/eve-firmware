@@ -1,7 +1,6 @@
 package cmds
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 )
@@ -20,10 +19,26 @@ type CommandFunc struct {
 	Func    func(c CommandCtx) string
 }
 
+type CommandType int
+
+const (
+	USER CommandType = iota
+	FUNCTIONAL
+	MISC
+)
+
+type ErrorType string
+
+const (
+	INVALID_COMMAND ErrorType = "ERR_INVALID_COMMAND"
+	INVALID_INDEX   ErrorType = "ERR_INVALID_INDEX"
+	INVALID_ARGS    ErrorType = "ERR_INVALID_ARGS"
+)
+
 type Command struct {
 	Call  byte
 	Funcs []CommandFunc
-	Cli   bool
+	Type  CommandType
 }
 
 type Commands []Command
@@ -48,7 +63,26 @@ func CmdHas(cmds []Command, c Command) (bool, Command) {
 	return false, Command{}
 }
 
-func ResolveCmds(rawArgs []string) []string {
+func IsErrorType(s string, t ErrorType) bool {
+	err := strings.Split(strings.TrimSpace(s), " ")[0]
+	return err == string(t)
+}
+
+func IsError(s string) bool {
+	err := strings.Split(strings.TrimSpace(s), " ")[0]
+	return strings.HasPrefix(err, "ERR")
+}
+
+func HasError(s []string) bool {
+	for _, i := range s {
+		if IsError(i) {
+			return true
+		}
+	}
+	return false
+}
+
+func ResolveCmds(rawArgs []string, source CommandType) []string {
 	if len(rawArgs) == 0 || rawArgs[0] == "" || rawArgs == nil {
 		return []string{}
 	}
@@ -60,22 +94,23 @@ func ResolveCmds(rawArgs []string) []string {
 		var cmd Command
 
 		if has, c := CmdHas(COMMANDS, Command{Call: a[0]}); !has {
-			fmt.Println("err: Invalid command '" + a + "'")
-			out = append(out, "err: Invalid comand '"+a+"'")
+			out = append(out, string(INVALID_COMMAND)+" err: Invalid comand '"+a+"'")
 			continue
 		} else {
 			cmd = c
 		}
 		if j, e := strconv.Atoi(a[1:]); e != nil || j >= len(cmd.Funcs) {
-			fmt.Println("err: Invalid command index '" + a[1:] + "'")
-			out = append(out, "err: Invalid command index '"+a[:1]+"'")
+			out = append(out, string(INVALID_INDEX)+" err: Invalid command index '"+a[:1]+"'")
 			continue
 		} else {
 			index = j
 		}
 		if len(rawArgs[i+1:]) < cmd.Funcs[index].NumArgs {
-			fmt.Println("err: Not enough args, need", cmd.Funcs[index].Args)
-			out = append(out, "err: Not enough args, need", cmd.Funcs[index].Args)
+			out = append(out, string(INVALID_ARGS)+" err: Not enough args, need "+cmd.Funcs[index].Args)
+			continue
+		}
+		if int(cmd.Type) > int(source) {
+			i += cmd.Funcs[index].NumArgs
 			continue
 		}
 
@@ -97,10 +132,6 @@ func ResolveCmds(rawArgs []string) []string {
 		}
 
 		msg := cmd.Funcs[index].Func(CommandCtx{index, args, intArgs, floatArgs})
-		if msg != "" {
-			fmt.Println(msg)
-		}
-
 		out = append(out, msg)
 
 		// Move i by NumArgs to next rawArg

@@ -45,37 +45,39 @@ func main() {
 	cmds.COMMANDS = append(cmds.COMMANDS,
 		cmds.Command{
 			Call: 'T',
+			Type: cmds.FUNCTIONAL,
 			Funcs: []cmds.CommandFunc{
 				{
 					NumArgs: 1,
 					Args:    "<string>",
 					Desc:    "Test argument handling",
 					Func: func(c cmds.CommandCtx) string {
-						return "test return: " + c.Args[0]
+						return c.Args[0]
 					},
 				},
 				{
 					NumArgs: 0,
 					Desc:    "Test command handling",
 					Func: func(c cmds.CommandCtx) string {
-						return "test return 2"
+						return "test return"
 					},
 				},
 			},
 		},
 		cmds.Command{
 			Call: 'S',
+			Type: cmds.USER,
 			Funcs: []cmds.CommandFunc{
-				{
-					NumArgs: 0,
-					Desc:    "Exit program",
-					Func: func(c cmds.CommandCtx) string {
-						if util.Prompt("Do you want to exit?") {
-							os.Exit(0)
-						}
-						return ""
-					},
-				},
+				// {
+				// 	NumArgs: 0,
+				// 	Desc:    "Exit program",
+				// 	Func: func(c cmds.CommandCtx) string {
+				// 		if util.Prompt("Do you want to exit?") {
+				// 			os.Exit(0)
+				// 		}
+				// 		return ""
+				// 	},
+				// },
 				{
 					NumArgs: 0,
 					Desc:    "Create service file",
@@ -87,6 +89,7 @@ func main() {
 		},
 		cmds.Command{
 			Call: 'H',
+			Type: cmds.USER,
 			Funcs: []cmds.CommandFunc{
 				{
 					NumArgs: 0,
@@ -94,6 +97,9 @@ func main() {
 					Func: func(c cmds.CommandCtx) string {
 						var out string
 						for _, cmd := range cmds.COMMANDS {
+							if cmd.Type == cmds.MISC {
+								continue
+							}
 							out += string(cmd.Call) + "\n"
 							for i, fn := range cmd.Funcs {
 								out += "   " + strconv.Itoa(i) + " " + fn.Args + " - " + fn.Desc + "\n"
@@ -106,6 +112,7 @@ func main() {
 		},
 		cmds.Command{
 			Call: 'G',
+			Type: cmds.FUNCTIONAL,
 			Funcs: []cmds.CommandFunc{
 				{
 					NumArgs: 2,
@@ -138,17 +145,22 @@ func main() {
 
 	Clear()
 
+	fmt.Print(ASCII + "\n\nEVE Firmware " + VERSION + "\nby vizn3r 2023\n\n")
+
 	arm.InitMotors()
 	if len(os.Args) > 1 {
-		cmds.ResolveCmds(os.Args[1:])
+		_, err := os.Stat(os.Args[1])
+		if !os.IsNotExist(err) {
+			go util.EveDecode(os.Args[1])
+		} else {
+			fmt.Println(strings.Join(cmds.ResolveCmds(os.Args[1:], cmds.FUNCTIONAL), "\n"))
+		}
 	}
-
-	fmt.Print(ASCII + "\n\nEVE Firmware " + VERSION + "\nby vizn3r 2023\n\n")
 
 	s := bufio.NewScanner(os.Stdin)
 	for {
 		if s.Scan() {
-			cmds.ResolveCmds(strings.Split(strings.TrimSpace(s.Text()), " "))
+			fmt.Println(strings.Join(cmds.ResolveCmds(strings.Split(strings.TrimSpace(s.Text()), " "), cmds.FUNCTIONAL), "\n"))
 		}
 	}
 	wg.Wait()

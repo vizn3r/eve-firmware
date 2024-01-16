@@ -35,6 +35,7 @@ var MOTORS Motors
 var MotorCommands = []cmds.Command{
 	{
 		Call: 'M',
+		Type: cmds.FUNCTIONAL,
 		Funcs: []cmds.CommandFunc{
 			{
 				NumArgs: 4,

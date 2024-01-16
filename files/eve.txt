@@ -1,0 +1,7 @@
+var loops 0
+t0 $loops
+if $loops != 10
+var ++ loops
+jump 2
+endif
+t0 end
