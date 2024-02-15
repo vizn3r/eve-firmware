@@ -2,7 +2,8 @@
     "Motors": [
         {
             "Step": 17,
-            "Dir": 27
+            "Dir": 27,
+            "Angle": 1.8
         }
     ]
 }

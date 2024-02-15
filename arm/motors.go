@@ -17,10 +17,8 @@ type Motor struct {
 	Diag  int
 }
 
-type Direction int
-
 const (
-	FORWARD Direction = iota
+	FORWARD int = iota
 	BACKWARD
 )
 
@@ -38,15 +36,6 @@ var MotorCommands = []cmds.Command{
 		Type: cmds.FUNCTIONAL,
 		Funcs: []cmds.CommandFunc{
 			{
-				NumArgs: 4,
-				Desc:    "Drive motor",
-				Args:    "<motor, dir, steps, delay>",
-				Func: func(c cmds.CommandCtx) string {
-					MOTORS[c.IntArgs[0]].DriveSteps(c.IntArgs[2], c.FloatArgs[3], Direction(c.IntArgs[1]))
-					return "done"
-				},
-			},
-			{
 				NumArgs: 0,
 				Desc:    "List of all motors",
 				Func: func(c cmds.CommandCtx) string {
@@ -55,6 +44,43 @@ var MotorCommands = []cmds.Command{
 						out += strconv.Itoa(i) + ". Motor\n  - STEP: " + strconv.Itoa(m.Step) + "\n  - DIR:  " + strconv.Itoa(m.Dir) + "\n"
 					}
 					return out
+				},
+			},
+
+			{
+				NumArgs: 4,
+				Desc:    "Drive motor by steps",
+				Args:    "<motor, dir, steps, delay>",
+				Func: func(c cmds.CommandCtx) string {
+					MOTORS[c.IntArgs[0]].DriveSteps(c.IntArgs[2], c.FloatArgs[3], int(c.IntArgs[1]))
+					return "done"
+				},
+			},
+			{
+				NumArgs: 4,
+				Desc:    "Drive motor by angle",
+				Args:    "<motor, dir, angle, delay>",
+				Func: func(c cmds.CommandCtx) string {
+					MOTORS[c.IntArgs[0]].DriveAngle(Angle(Angle(c.FloatArgs[2]).Radians()), c.FloatArgs[3], int(c.IntArgs[1]))
+					return "done"
+				},
+			},
+			{
+				NumArgs: 4,
+				Desc:    "Drive motor by steps asynchronously",
+				Args:    "<motor, dir, steps, delay>",
+				Func: func(c cmds.CommandCtx) string {
+					go MOTORS[c.IntArgs[0]].DriveSteps(c.IntArgs[2], c.FloatArgs[3], int(c.IntArgs[1]))
+					return "done"
+				},
+			},
+			{
+				NumArgs: 4,
+				Desc:    "Drive motor by angle asynchronously",
+				Args:    "<motor, dir, angle, delay>",
+				Func: func(c cmds.CommandCtx) string {
+					go MOTORS[c.IntArgs[0]].DriveAngle(Angle(Angle(c.FloatArgs[2]).Radians()), c.FloatArgs[3], int(c.IntArgs[1]))
+					return "done"
 				},
 			},
 		},
@@ -96,13 +122,19 @@ func (m *Motor) DoStep(delay float64) error {
 	return nil
 }
 
-// Drive motor by Steps with Delay in Direction
-func (m *Motor) DriveSteps(steps int, delay float64, dir Direction) {
+// Drive motor by Steps with Delay in int
+func (m *Motor) DriveSteps(steps int, delay float64, dir int) {
 	if err := m.OpenPins(); err != nil {
 		fmt.Println(err)
 		return
 	}
 	defer gpio.Close()
+
+	if err := gpio.Write(m.Dir, strconv.Itoa(int(dir))); err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	for i := 0; i < steps; i++ {
 		if err := m.DoStep(delay); err != nil {
 			fmt.Println(err)
@@ -111,14 +143,15 @@ func (m *Motor) DriveSteps(steps int, delay float64, dir Direction) {
 	}
 }
 
-// Drive motor to Angle relative to current position with Delay in Direction
-func (m *Motor) DriveAngle(angle Angle, delay float64, dir Direction) {
+// Drive motor to Angle relative to current position with Delay in int
+func (m *Motor) DriveAngle(angle Angle, delay float64, dir int) {
+	fmt.Println(angle)
 	if err := m.OpenPins(); err != nil {
 		fmt.Println(err)
 		return
 	}
 	defer gpio.Close()
-	for i := 0.0; i <= angle.Degrees(); i += m.Angle {
+	for i := 0.0; i <= angle.Float64(); i += m.Angle {
 		if err := m.DoStep(delay); err != nil {
 			fmt.Println(err)
 			return
@@ -126,8 +159,8 @@ func (m *Motor) DriveAngle(angle Angle, delay float64, dir Direction) {
 	}
 }
 
-// Drive motor to Angle relative to current position in Time, in Direction
-func (m *Motor) Drive(angle Angle, time float64, dir Direction) {
+// Drive motor to Angle relative to current position in Time, in int
+func (m *Motor) Drive(angle Angle, time float64, dir int) {
 	if err := m.OpenPins(); err != nil {
 		fmt.Println(err)
 		return

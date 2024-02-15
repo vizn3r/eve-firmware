@@ -16,7 +16,7 @@ import (
 	"sync"
 )
 
-const VERSION = "v0.0.3"
+const VERSION = "v0.0.4"
 
 const ASCII = "\n" + `_____________    ____________       __________________________ ______  ______       _________ ________ __________
 ___  ____/__ |  / /___  ____/       ___  ____/____  _/___  __ \___   |/  /__ |     / /___    |___  __ \___  ____/
@@ -59,6 +59,25 @@ func main() {
 					NumArgs: 0,
 					Desc:    "Test command handling",
 					Func: func(c cmds.CommandCtx) string {
+						// m := arm.POSITION.HTMatrices[0]
+						// n := arm.POSITION.HTMatrices[1]
+						// m := arm.NewMtxArr([][]float64{
+						// 	{1, 0, 0, 1},
+						// 	{0, 1, 0, 0},
+						// 	{0, 0, 1, 1},
+						// 	{0, 0, 0, 1},
+						// })
+						// n := arm.NewMtxArr([][]float64{
+						// 	{1, 0, 0, 0},
+						// 	{0, 1, 0, 0},
+						// 	{0, 0, 1, 1},
+						// 	{0, 0, 0, 1},
+						// })
+						// o := arm.NewMtxArr([][]float64{
+						// 	{1, 0, 0, 0},
+						// 	{0, 1, 0, 0},
+						// 	{0, 0, 1, 1},
+						// 	{0, 0, 0, 1},
 						return "test return"
 					},
 				},
@@ -78,6 +97,14 @@ func main() {
 				// 		return ""
 				// 	},
 				// },
+				{
+					NumArgs: 1,
+					Desc:    "Load EVE script file",
+					Args:    "<path>",
+					Func: func(c cmds.CommandCtx) string {
+						return util.EveDecode(c.Args[0])
+					},
+				},
 				{
 					NumArgs: 0,
 					Desc:    "Create service file",
@@ -115,6 +142,14 @@ func main() {
 			Type: cmds.FUNCTIONAL,
 			Funcs: []cmds.CommandFunc{
 				{
+					NumArgs: 0,
+					Desc:    "Toggle test mode",
+					Func: func(c cmds.CommandCtx) string {
+						gpio.Test = !gpio.Test
+						return "Test mode toggled: " + strconv.FormatBool(gpio.Test)
+					},
+				},
+				{
 					NumArgs: 2,
 					Desc:    "Open pin",
 					Args:    "<pin, mode>",
@@ -136,18 +171,35 @@ func main() {
 						return ""
 					},
 				},
+				{
+					NumArgs: 2,
+					Desc:    "Read pin value",
+					Args:    "<pin>",
+					Func: func(c cmds.CommandCtx) string {
+						if out, err := gpio.Read(c.IntArgs[0]); err != nil {
+							return err.Error()
+						} else {
+							return out
+						}
+					},
+				},
 			},
 		},
 	)
 
 	var wg sync.WaitGroup
-	go com.InitWS(&wg)
+	com.InitWS(&wg)
+	go com.StartWS(&wg)
+	go com.StartHTTP()
 
 	Clear()
 
 	fmt.Print(ASCII + "\n\nEVE Firmware " + VERSION + "\nby vizn3r 2023\n\n")
 
+	// go visualizer.RunApp()
+
 	arm.InitMotors()
+	// arm.InitPosition()
 	if len(os.Args) > 1 {
 		_, err := os.Stat(os.Args[1])
 		if !os.IsNotExist(err) {

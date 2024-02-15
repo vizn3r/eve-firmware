@@ -16,7 +16,10 @@ const (
 	GPIO        = "/sys/class/gpio"
 )
 
-var open []int
+var (
+	open []int
+	Test bool
+)
 
 func FileExists(file string) bool {
 	_, err := os.Stat(file)
@@ -24,6 +27,10 @@ func FileExists(file string) bool {
 }
 
 func WriteFile(file string, args string) error {
+	if Test {
+		fmt.Println("Writing to", file)
+		return nil
+	}
 	if len(args) < 1 {
 		return fmt.Errorf("not enough arguments")
 	}
@@ -38,6 +45,10 @@ func WriteFile(file string, args string) error {
 }
 
 func ReadFile(file string) ([]byte, error) {
+	if Test {
+		fmt.Println("Reading file", file)
+		return []byte("test"), nil
+	}
 	mem, err := os.OpenFile(file, os.O_RDWR, os.ModePerm)
 	if err != nil {
 		return nil, err

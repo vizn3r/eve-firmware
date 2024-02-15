@@ -7,6 +7,11 @@ import (
 )
 
 func ParseJSON(file string, data any) {
+	_, err := os.Stat(file)
+	if os.IsNotExist(err) {
+		// log.Println("")
+		return
+	}
 	byte, err := os.ReadFile(file)
 	if err != nil {
 		fmt.Println("err: Can't open JSON file", file, err)
@@ -30,4 +35,3 @@ func ToJSON(file string, data any) {
 		fmt.Println("err: Can't write JSON file", file, err)
 	}
 }
-

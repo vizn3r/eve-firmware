@@ -3,7 +3,6 @@ package util
 import (
 	"bufio"
 	"eve-firmware/cmds"
-	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -86,25 +85,27 @@ func jumpEndIf(b []string, start int) int {
 	return len(b)
 }
 
-func EveDecode(path string) {
+func EveDecode(path string) string {
 	f, err := os.Open(path)
 	if err != nil {
-		fmt.Println(err)
-		return
+		return err.Error()
 	}
 	defer f.Close()
 
 	var buff []string
 	s := bufio.NewScanner(f)
-	fmt.Println("Loading file")
 	for s.Scan() {
 		buff = append(buff, s.Text())
 	}
-	fmt.Println("Loaded file")
+	outBuff := ""
 
 	varBuff := make(map[string]string)
 	for i := 0; i < len(buff); i++ {
 		switch strings.ToLower(getString(buff[i], 0)) {
+		case "print":
+			outBuff += strings.Join(resolveVar(buff[i][len("print")+2:], varBuff), " ")
+		case "println":
+			outBuff += strings.Join(resolveVar(buff[i][len("printf")+2:], varBuff), " ") + "\n"
 		case "jump":
 			i = getInt(buff[i]) - 2
 		case "sleep":
@@ -129,29 +130,10 @@ func EveDecode(path string) {
 		case "endif":
 		default:
 			out := cmds.ResolveCmds(resolveVar(buff[i], varBuff), cmds.MISC)
-			fmt.Println(strings.Join(out, "\n"))
-			if cmds.HasError(out) {
-				return
+			if !cmds.HasError(out) {
+				outBuff += strings.Join(out, "\n")
 			}
 		}
 	}
-	// for i := 0; i <= len(buff); i++ {
-	// 	out := cmds.ResolveCmds(strings.Split(strings.TrimSpace(buff[i]), " "), cmds.MISC)
-	// 	for j, s := range out {
-	// 		split := []string(strings.Split(strings.ToLower(s), " "))
-	// 		switch split[j] {
-	// 		case "jump":
-	// 			i, _ = strconv.Atoi(split[j+1])
-	// 			i++
-	// 		case "var":
-	// 			k, _ := strconv.Atoi(split[j+1])
-	// 			varBuff[split[j]] = k
-	// 		case "delay":
-	// 			k, _ := strconv.Atoi(split[j+1])
-	// 			time.Sleep(time.Millisecond * time.Duration(k))
-	// 		default:
-	// 			fmt.Println(strings.Join(out, "\n"))
-	// 		}
-	// 	}
-	// }
+	return outBuff
 }
