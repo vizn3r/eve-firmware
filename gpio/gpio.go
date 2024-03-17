@@ -65,6 +65,7 @@ func ReadFile(file string) ([]byte, error) {
 func Dir(pin int, mode Mode) error {
 	if err := WriteFile(GPIO+"/gpio"+strconv.Itoa(pin)+"/direction", string(mode)); err != nil {
 		return err
+		if err != nil {
 	}
 	return nil
 }
