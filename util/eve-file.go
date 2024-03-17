@@ -3,6 +3,7 @@ package util
 import (
 	"bufio"
 	"eve-firmware/cmds"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -92,12 +93,14 @@ func EveDecode(path string) string {
 	}
 	defer f.Close()
 
+	fmt.Println("Loading file", path)
 	var buff []string
 	s := bufio.NewScanner(f)
 	for s.Scan() {
 		buff = append(buff, s.Text())
 	}
 	outBuff := ""
+	fmt.Println("File loaded")
 
 	varBuff := make(map[string]string)
 	for i := 0; i < len(buff); i++ {

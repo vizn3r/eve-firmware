@@ -16,7 +16,7 @@ import (
 	"sync"
 )
 
-const VERSION = "v0.0.4"
+const VERSION = "v0.0.5"
 
 const ASCII = "\n" + `_____________    ____________       __________________________ ______  ______       _________ ________ __________
 ___  ____/__ |  / /___  ____/       ___  ____/____  _/___  __ \___   |/  /__ |     / /___    |___  __ \___  ____/
@@ -59,25 +59,6 @@ func main() {
 					NumArgs: 0,
 					Desc:    "Test command handling",
 					Func: func(c cmds.CommandCtx) string {
-						// m := arm.POSITION.HTMatrices[0]
-						// n := arm.POSITION.HTMatrices[1]
-						// m := arm.NewMtxArr([][]float64{
-						// 	{1, 0, 0, 1},
-						// 	{0, 1, 0, 0},
-						// 	{0, 0, 1, 1},
-						// 	{0, 0, 0, 1},
-						// })
-						// n := arm.NewMtxArr([][]float64{
-						// 	{1, 0, 0, 0},
-						// 	{0, 1, 0, 0},
-						// 	{0, 0, 1, 1},
-						// 	{0, 0, 0, 1},
-						// })
-						// o := arm.NewMtxArr([][]float64{
-						// 	{1, 0, 0, 0},
-						// 	{0, 1, 0, 0},
-						// 	{0, 0, 1, 1},
-						// 	{0, 0, 0, 1},
 						return "test return"
 					},
 				},
@@ -87,16 +68,6 @@ func main() {
 			Call: 'S',
 			Type: cmds.USER,
 			Funcs: []cmds.CommandFunc{
-				// {
-				// 	NumArgs: 0,
-				// 	Desc:    "Exit program",
-				// 	Func: func(c cmds.CommandCtx) string {
-				// 		if util.Prompt("Do you want to exit?") {
-				// 			os.Exit(0)
-				// 		}
-				// 		return ""
-				// 	},
-				// },
 				{
 					NumArgs: 1,
 					Desc:    "Load EVE script file",
@@ -171,18 +142,18 @@ func main() {
 						return ""
 					},
 				},
-				{
-					NumArgs: 2,
-					Desc:    "Read pin value",
-					Args:    "<pin>",
-					Func: func(c cmds.CommandCtx) string {
-						if out, err := gpio.Read(c.IntArgs[0]); err != nil {
-							return err.Error()
-						} else {
-							return out
-						}
-					},
-				},
+				// {
+				// 	NumArgs: 2,
+				// 	Desc:    "Read pin value",
+				// 	Args:    "<pin>",
+				// 	Func: func(c cmds.CommandCtx) string {
+				// 		if out, err := gpio.Read(c.IntArgs[0]); err != nil {
+				// 			return err.Error()
+				// 		} else {
+				// 			return out
+				// 		}
+				// 	},
+				// },
 			},
 		},
 	)
@@ -196,10 +167,10 @@ func main() {
 
 	fmt.Print(ASCII + "\n\nEVE Firmware " + VERSION + "\nby vizn3r 2023\n\n")
 
-	// go visualizer.RunApp()
-
 	arm.InitMotors()
-	// arm.InitPosition()
+	defer arm.CloseMotors()
+	// arm.InitKinematics()
+
 	if len(os.Args) > 1 {
 		_, err := os.Stat(os.Args[1])
 		if !os.IsNotExist(err) {
@@ -215,5 +186,4 @@ func main() {
 			fmt.Println(strings.Join(cmds.ResolveCmds(strings.Split(strings.TrimSpace(s.Text()), " "), cmds.FUNCTIONAL), "\n"))
 		}
 	}
-	wg.Wait()
 }
