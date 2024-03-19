@@ -16,7 +16,7 @@ import (
 	"sync"
 )
 
-const VERSION = "v0.0.5"
+const VERSION = "v0.0.6"
 
 const ASCII = "\n" + `_____________    ____________       __________________________ ______  ______       _________ ________ __________
 ___  ____/__ |  / /___  ____/       ___  ____/____  _/___  __ \___   |/  /__ |     / /___    |___  __ \___  ____/
@@ -167,6 +167,13 @@ func main() {
 
 	fmt.Print(ASCII + "\n\nEVE Firmware " + VERSION + "\nby vizn3r 2023\n\n")
 
+	servo := arm.Servo{}
+	registers := arm.Register{}
+
+	arm.InitServos()
+	servo.Open()
+	arm.InitRegisters()
+	registers.Open()
 	arm.InitMotors()
 	defer arm.CloseMotors()
 	// arm.InitKinematics()

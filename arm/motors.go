@@ -11,21 +11,27 @@ import (
 
 // Pins for motor driver
 type Motor struct {
-	Step    int
-	Angle   float64
-	Dir     int
-	Diag    int
+	Step     int
+	Angle    float64
+	Dir      int
+	Stepping SteppingMode
+
 	running bool
 }
-
-const (
-	FORWARD int = iota
-	BACKWARD
-)
 
 type MotorConfig struct {
 	Motors []Motor
 }
+
+type SteppingMode []uint
+
+var (
+	// Stepping modes
+	SPEED_1 SteppingMode = []uint{0, 0} // 1/8
+	SPEED_2 SteppingMode = []uint{1, 1} // 1/16
+	SPEED_3 SteppingMode = []uint{0, 1} // 1/32
+	SPEED_4 SteppingMode = []uint{1, 0} // 1/64
+)
 
 var MOTORS []*Motor
 
@@ -48,7 +54,7 @@ var MotorCommands = []cmds.Command{
 			{
 				NumArgs: 4,
 				Desc:    "Drive motor by steps",
-				Args:    "<motor, dir, steps, delay>",
+				Args:    "<motor, dir, steps, delay [ns]>",
 				Func: func(c cmds.CommandCtx) string {
 					motor := MOTORS[c.IntArgs[0]]
 					motor.DriveSteps(c.IntArgs[2], c.FloatArgs[3], int(c.IntArgs[1]))
@@ -58,7 +64,7 @@ var MotorCommands = []cmds.Command{
 			{
 				NumArgs: 4,
 				Desc:    "Drive motor by angle",
-				Args:    "<motor, dir, angle, delay>",
+				Args:    "<motor, dir, angle, delay [ns]>",
 				Func: func(c cmds.CommandCtx) string {
 					motor := MOTORS[c.IntArgs[0]]
 					motor.DriveAngle(Angle(Angle(c.FloatArgs[2]).Radians()), c.FloatArgs[3], int(c.IntArgs[1]))
@@ -68,7 +74,7 @@ var MotorCommands = []cmds.Command{
 			{
 				NumArgs: 4,
 				Desc:    "Drive motors by steps asynchronously",
-				Args:    "<motor, dir, steps, delay>",
+				Args:    "<motor, dir, steps, delay [ns]>",
 				Func: func(c cmds.CommandCtx) string {
 					motor := MOTORS[c.IntArgs[0]]
 					for motor.IsRunning() {
@@ -81,7 +87,7 @@ var MotorCommands = []cmds.Command{
 			{
 				NumArgs: 4,
 				Desc:    "Drive motor by angle asynchronously",
-				Args:    "<motor, dir, angle, delay>",
+				Args:    "<motor, dir, angle, delay [ns]>",
 				Func: func(c cmds.CommandCtx) string {
 					go MOTORS[c.IntArgs[0]].DriveAngle(Angle(Angle(c.FloatArgs[2]).Radians()), c.FloatArgs[3], int(c.IntArgs[1]))
 					return "motor" + c.Args[0] + " started in async"
@@ -95,7 +101,7 @@ var MotorCommands = []cmds.Command{
 func InitMotors() {
 	cmds.COMMANDS = append(cmds.COMMANDS, MotorCommands...)
 	motors := MotorConfig{}
-	util.ParseJSON("./conf/motors.json", &motors)
+	util.ParseJSON("./conf/conf.json", &motors)
 	for i, motor := range motors.Motors {
 		motptr := new(Motor)
 		motptr.Step = motor.Step
@@ -126,7 +132,9 @@ func (m *Motor) ClosePins() error {
 
 func CloseMotors() {
 	for _, motor := range MOTORS {
-		motor.ClosePins()
+		if err := motor.ClosePins(); err != nil {
+			fmt.Println("Error closing motor pins:", err)
+		}
 	}
 }
 
@@ -140,11 +148,11 @@ func (m *Motor) DoStep(delay float64) error {
 	if err := gpio.High(m.Step); err != nil {
 		return err
 	}
-	time.Sleep(time.Microsecond * time.Duration(delay))
+	time.Sleep(time.Nanosecond * time.Duration(delay))
 	if err := gpio.Low(m.Step); err != nil {
 		return err
 	}
-	time.Sleep(time.Microsecond * time.Duration(delay))
+	time.Sleep(time.Nanosecond * time.Duration(delay))
 	return nil
 }
 
@@ -152,19 +160,18 @@ func (m *Motor) DoStep(delay float64) error {
 func (m *Motor) DriveSteps(steps int, delay float64, dir int) {
 	m.running = true
 	if err := m.OpenPins(); err != nil {
-		fmt.Println(err)
+		fmt.Println("Error opening pins:", err)
 		return
 	}
 
 	if err := gpio.Write(m.Dir, int(dir)); err != nil {
-		fmt.Println(err)
+		fmt.Println("Error setting direction:", err)
 		return
 	}
 
 	for i := 0; i < steps; i++ {
 		if err := m.DoStep(delay); err != nil {
-			fmt.Println(err)
-			return
+			fmt.Println("Error doing step:")
 		}
 	}
 	m.running = false
@@ -174,12 +181,17 @@ func (m *Motor) DriveSteps(steps int, delay float64, dir int) {
 func (m *Motor) DriveAngle(angle Angle, delay float64, dir int) {
 	m.running = true
 	if err := m.OpenPins(); err != nil {
-		fmt.Println(err)
+		fmt.Println("Error opening pins:", err)
 		return
 	}
+
+	if err := gpio.Write(m.Dir, int(dir)); err != nil {
+		fmt.Println("Error doing step:")
+	}
+
 	for i := 0.0; i <= angle.Float64(); i += m.Angle {
 		if err := m.DoStep(delay); err != nil {
-			fmt.Println(err)
+			fmt.Println("Error doing step:")
 			return
 		}
 	}
