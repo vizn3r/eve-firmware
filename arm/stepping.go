@@ -60,10 +60,10 @@ func InitRegisters() {
 }
 
 func (r *Register) Open() {
-	REGISTERS = append(REGISTERS, r)
 	if err := gpio.Open(r.SHCP, r.STCP, r.MR, r.DS); err != nil {
-		fmt.Println(err)
+		fmt.Println("Can't open register:", err)
 	}
+	REGISTERS = append(REGISTERS, r)
 }
 
 func (r *Register) SHCPPulse() {

@@ -39,9 +39,11 @@ func InitServos() {
 }
 
 func (s *Servo) Open() {
-	SERVOS = append(SERVOS, s)
+	s.prevPulse = 1500
 	s.minPulse = 1000
 	s.maxPulse = 2000
+	s.newPulse = make(chan float64)
+	s.close = make(chan bool)
 	if err := gpio.Open(s.Pin); err != nil {
 		fmt.Println("Can't open servo pin:", err)
 		return
@@ -50,6 +52,7 @@ func (s *Servo) Open() {
 		fmt.Println("Can't set servo pin:", err)
 		return
 	}
+	SERVOS = append(SERVOS, s)
 	go func() {
 		for {
 			if err := gpio.Low(s.Pin); err != nil {
@@ -62,7 +65,7 @@ func (s *Servo) Open() {
 					fmt.Println(err)
 				}
 				s.prevPulse = pulse
-				time.Sleep(time.Millisecond * time.Duration(pulse))
+				time.Sleep(time.Microsecond * time.Duration(pulse))
 			case <-s.close:
 				close(s.close)
 				close(s.newPulse)
@@ -71,7 +74,7 @@ func (s *Servo) Open() {
 				if err := gpio.High(s.Pin); err != nil {
 					fmt.Println(err)
 				}
-				time.Sleep(time.Millisecond * time.Duration(s.prevPulse))
+				time.Sleep(time.Microsecond * time.Duration(s.prevPulse))
 			}
 		}
 	}()

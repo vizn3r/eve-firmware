@@ -167,11 +167,20 @@ func main() {
 
 	fmt.Print(ASCII + "\n\nEVE Firmware " + VERSION + "\nby vizn3r 2023\n\n")
 
-	servo := arm.Servo{}
-	registers := arm.Register{}
+	// servo := arm.Servo{Pin: 18}
+	registers := arm.Register{
+		DS:   20,
+		MR:   21,
+		SHCP: 26,
+		STCP: 19,
+
+		CLKDelay: 500,
+	}
+
+	// gpio.Test = true
 
 	arm.InitServos()
-	servo.Open()
+	// servo.Open()
 	arm.InitRegisters()
 	registers.Open()
 	arm.InitMotors()

@@ -37,7 +37,7 @@ func FileExists(file string) bool {
 
 func WriteFile(file string, args string) error {
 	if Test {
-		fmt.Println("Writing to", file)
+		fmt.Println("Writing", args, "to", file)
 		return nil
 	}
 	if len(args) < 1 {

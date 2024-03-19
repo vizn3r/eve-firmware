@@ -101,7 +101,7 @@ var MotorCommands = []cmds.Command{
 func InitMotors() {
 	cmds.COMMANDS = append(cmds.COMMANDS, MotorCommands...)
 	motors := MotorConfig{}
-	util.ParseJSON("./conf/conf.json", &motors)
+	util.ParseJSON("./conf/motors.json", &motors)
 	for i, motor := range motors.Motors {
 		motptr := new(Motor)
 		motptr.Step = motor.Step
@@ -145,6 +145,24 @@ func (m *Motor) IsRunning() bool {
 // Do one step of Motor
 func (m *Motor) DoStep(delay float64) error {
 	m.running = true
+	if err := gpio.High(m.Step); err != nil {
+		return err
+	}
+	time.Sleep(time.Nanosecond * time.Duration(delay))
+	if err := gpio.Low(m.Step); err != nil {
+		return err
+	}
+	time.Sleep(time.Nanosecond * time.Duration(delay))
+	return nil
+}
+
+// Do one step of Motor
+func (m *Motor) DoStepDir(delay float64, dir int) error {
+	m.running = true
+	if err := gpio.Write(m.Dir, int(dir)); err != nil {
+		fmt.Println("Error setting direction:", err)
+		return err
+	}
 	if err := gpio.High(m.Step); err != nil {
 		return err
 	}
