@@ -3,6 +3,8 @@ package com
 import (
 	"eve-firmware/arm"
 	"eve-firmware/cmds"
+	"eve-firmware/gpio"
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -46,20 +48,17 @@ func StartWS(wg *sync.WaitGroup) {
 				log.Println("read:", err)
 				break
 			}
-			log.Printf("WebSocket: \"%s\"", msg)
 
-			res := []string{}
 			if strings.HasPrefix(string(msg), "CON") {
-				ResolveController(string(msg))
-			} else {
-				res = cmds.ResolveCmds(strings.Split(string(msg), " "), cmds.FUNCTIONAL)
+				ResolveController(string(msg)[3:])
+				continue
 			}
 
-			if len(res) > 0 {
-				if err = c.WriteMessage(mt, []byte(strings.Join(res, "\n"))); err != nil {
-					log.Println("write:", err)
-					break
-				}
+			res := cmds.ResolveCmds(strings.Split(string(msg), " "), cmds.FUNCTIONAL)
+			log.Printf("WebSocket: \"%s\"", msg)
+			if err = c.WriteMessage(mt, []byte(strings.Join(res, "\n"))); err != nil {
+				fmt.Println(err)
+				break
 			}
 		}
 	}))
@@ -68,8 +67,7 @@ func StartWS(wg *sync.WaitGroup) {
 }
 
 func ResolveController(data string) {
-	rawString := strings.TrimPrefix(data, "CON")
-	dataArr := strings.Split(rawString, "/")
+	dataArr := strings.Split(data, "/")
 	intArr := []int{}
 	for _, str := range dataArr {
 		num, _ := strconv.Atoi(str)
@@ -77,9 +75,27 @@ func ResolveController(data string) {
 	}
 
 	// Move motors based on controller input
-	for i, data := range intArr {
-		go arm.MOTORS[i].DoStepDir(arm.MapValue(float64(data), 0, 32768, 100, 0.1), Dir(data))
+	for i, mot := range arm.MOTORS {
+		data := intArr[i]
+		if Positive(data) > 10000 && !mot.IsRunning() {
+			val := arm.MapValue(float64(Positive(data)), 10000, 32768, 100000, 1)
+			if i < 3 {
+				val /= 1000
+			}
+			if err := gpio.Write(mot.Dir, int(Dir(data))); err != nil {
+				fmt.Println("Error setting direction:", err)
+				return
+			}
+			go mot.DoStep(val)
+		}
 	}
+}
+
+func Positive(data int) int {
+	if data > 0 {
+		return data
+	}
+	return -data
 }
 
 func Dir(data int) int {

@@ -33,68 +33,90 @@ var (
 	SPEED_4 SteppingMode = []uint{1, 0} // 1/64
 )
 
-var MOTORS []*Motor
-
-var MotorCommands = []cmds.Command{
-	{
-		Call: 'M',
-		Type: cmds.FUNCTIONAL,
-		Funcs: []cmds.CommandFunc{
-			{
-				NumArgs: 0,
-				Desc:    "List of all motors",
-				Func: func(c cmds.CommandCtx) string {
-					var out string
-					for i, m := range MOTORS {
-						out += strconv.Itoa(i) + ". Motor\n  - STEP: " + strconv.Itoa(m.Step) + "\n  - DIR:  " + strconv.Itoa(m.Dir) + "\n"
-					}
-					return out
+var (
+	MOTORS        []*Motor
+	ENABLED       = 0
+	MotorCommands = []cmds.Command{
+		{
+			Call: 'M',
+			Type: cmds.FUNCTIONAL,
+			Funcs: []cmds.CommandFunc{
+				{
+					NumArgs: 0,
+					Desc:    "List of all motors",
+					Func: func(c cmds.CommandCtx) string {
+						var out string
+						for i, m := range MOTORS {
+							out += strconv.Itoa(i) + ". Motor\n  - STEP: " + strconv.Itoa(m.Step) + "\n  - DIR:  " + strconv.Itoa(m.Dir) + "\n"
+						}
+						return out
+					},
 				},
-			},
-			{
-				NumArgs: 4,
-				Desc:    "Drive motor by steps",
-				Args:    "<motor, dir, steps, delay [ns]>",
-				Func: func(c cmds.CommandCtx) string {
-					motor := MOTORS[c.IntArgs[0]]
-					motor.DriveSteps(c.IntArgs[2], c.FloatArgs[3], int(c.IntArgs[1]))
-					return "motor" + c.Args[0] + " started"
+				{
+					NumArgs: 4,
+					Desc:    "Drive motor by steps",
+					Args:    "<motor, dir, steps, delay [ns]>",
+					Func: func(c cmds.CommandCtx) string {
+						motor := MOTORS[c.IntArgs[0]]
+						motor.DriveSteps(c.IntArgs[2], c.FloatArgs[3], int(c.IntArgs[1]))
+						return "motor" + c.Args[0] + " started"
+					},
 				},
-			},
-			{
-				NumArgs: 4,
-				Desc:    "Drive motor by angle",
-				Args:    "<motor, dir, angle, delay [ns]>",
-				Func: func(c cmds.CommandCtx) string {
-					motor := MOTORS[c.IntArgs[0]]
-					motor.DriveAngle(Angle(Angle(c.FloatArgs[2]).Radians()), c.FloatArgs[3], int(c.IntArgs[1]))
-					return "motor" + c.Args[0] + " started"
+				{
+					NumArgs: 4,
+					Desc:    "Drive motor by angle",
+					Args:    "<motor, dir, angle, delay [ns]>",
+					Func: func(c cmds.CommandCtx) string {
+						motor := MOTORS[c.IntArgs[0]]
+						motor.DriveAngle(Angle(Angle(c.FloatArgs[2]).Radians()), c.FloatArgs[3], int(c.IntArgs[1]))
+						return "motor" + c.Args[0] + " started"
+					},
 				},
-			},
-			{
-				NumArgs: 4,
-				Desc:    "Drive motors by steps asynchronously",
-				Args:    "<motor, dir, steps, delay [ns]>",
-				Func: func(c cmds.CommandCtx) string {
-					motor := MOTORS[c.IntArgs[0]]
-					for motor.IsRunning() {
-						time.Sleep(time.Millisecond)
-					}
-					go motor.DriveSteps(c.IntArgs[2], c.FloatArgs[3], int(c.IntArgs[1]))
-					return "motor" + c.Args[0] + " started in async"
+				{
+					NumArgs: 4,
+					Desc:    "Drive motors by steps asynchronously",
+					Args:    "<motor, dir, steps, delay [ns]>",
+					Func: func(c cmds.CommandCtx) string {
+						motor := MOTORS[c.IntArgs[0]]
+						for motor.IsRunning() {
+							time.Sleep(time.Millisecond)
+						}
+						go motor.DriveSteps(c.IntArgs[2], c.FloatArgs[3], int(c.IntArgs[1]))
+						return "motor" + c.Args[0] + " started in async"
+					},
 				},
-			},
-			{
-				NumArgs: 4,
-				Desc:    "Drive motor by angle asynchronously",
-				Args:    "<motor, dir, angle, delay [ns]>",
-				Func: func(c cmds.CommandCtx) string {
-					go MOTORS[c.IntArgs[0]].DriveAngle(Angle(Angle(c.FloatArgs[2]).Radians()), c.FloatArgs[3], int(c.IntArgs[1]))
-					return "motor" + c.Args[0] + " started in async"
+				{
+					NumArgs: 4,
+					Desc:    "Drive motor by angle asynchronously",
+					Args:    "<motor, dir, angle, delay [ns]>",
+					Func: func(c cmds.CommandCtx) string {
+						go MOTORS[c.IntArgs[0]].DriveAngle(Angle(Angle(c.FloatArgs[2]).Radians()), c.FloatArgs[3], int(c.IntArgs[1]))
+						return "motor" + c.Args[0] + " started in async"
+					},
+				},
+				{
+					NumArgs: 0,
+					Desc:    "Toggle driver ENABLE pin",
+					Func: func(c cmds.CommandCtx) string {
+						if ENABLED == 1 {
+							ENABLED = 0
+						} else {
+							ENABLED = 1
+						}
+						WriteEnable()
+						return gpio.Format("Toggled to ", ENABLED)
+					},
 				},
 			},
 		},
-	},
+	}
+)
+
+func WriteEnable() {
+	if err := gpio.Write(10, ENABLED); err != nil {
+		fmt.Println(err)
+		return
+	}
 }
 
 // Load motor configurations from "./conf/motors.json", append them to MOTORS and append MotorCommands to COMMANDS
@@ -102,13 +124,22 @@ func InitMotors() {
 	cmds.COMMANDS = append(cmds.COMMANDS, MotorCommands...)
 	motors := MotorConfig{}
 	util.ParseJSON("./conf/motors.json", &motors)
-	for i, motor := range motors.Motors {
+	for _, motor := range motors.Motors {
 		motptr := new(Motor)
 		motptr.Step = motor.Step
 		motptr.Dir = motor.Dir
 		motptr.Angle = motor.Angle
+		motptr.running = false
 		MOTORS = append(MOTORS, motptr)
-		MOTORS[i].running = false
+
+		if err := motptr.OpenPins(); err != nil {
+			fmt.Println(err)
+			return
+		}
+	}
+	if err := gpio.Open(10); err != nil {
+		fmt.Println(err)
+		return
 	}
 }
 
@@ -153,24 +184,7 @@ func (m *Motor) DoStep(delay float64) error {
 		return err
 	}
 	time.Sleep(time.Nanosecond * time.Duration(delay))
-	return nil
-}
-
-// Do one step of Motor
-func (m *Motor) DoStepDir(delay float64, dir int) error {
-	m.running = true
-	if err := gpio.Write(m.Dir, int(dir)); err != nil {
-		fmt.Println("Error setting direction:", err)
-		return err
-	}
-	if err := gpio.High(m.Step); err != nil {
-		return err
-	}
-	time.Sleep(time.Nanosecond * time.Duration(delay))
-	if err := gpio.Low(m.Step); err != nil {
-		return err
-	}
-	time.Sleep(time.Nanosecond * time.Duration(delay))
+	m.running = false
 	return nil
 }
 

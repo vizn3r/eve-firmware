@@ -27,5 +27,5 @@ do
   done
 done
 
-/usr/bin/pscp -pw 3766 "$BUILDPATH/eve-firmware-linux-arm" "simon@192.168.0.32:"
+/usr/bin/pscp -pw 3766 "$BUILDPATH/eve-firmware-linux-arm" "simon@10.0.0.111:"
 # /usr/bin/pscp -pw 3766 "$PATH/eve-firmware-linux-arm64" "simon@eve.local:"

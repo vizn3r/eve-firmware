@@ -12,6 +12,7 @@ import (
 type Mode string
 
 type Pin struct {
+	GPIO      int
 	Value     any
 	Direction Mode
 	State     bool
@@ -27,8 +28,39 @@ const (
 var (
 	Test   bool
 	OFFSET = 0
-	pins   = make(map[int]*Pin)
+	pins   = []*Pin{}
 )
+
+func NewPin(gpio int) *Pin {
+	if pin := FindPin(gpio); pin != nil {
+		return pin
+	}
+	pin := new(Pin)
+	pin.GPIO = gpio + OFFSET
+	pin.Direction = NONE
+	pin.State = true
+	pins = append(pins, pin)
+	return pin
+}
+
+func FindPin(gpio int) *Pin {
+	for _, pin := range pins {
+		if pin.GPIO == gpio+OFFSET {
+			return pin
+		}
+	}
+	return nil
+}
+
+func ClosePin(gpio int) {
+	pin := FindPin(gpio)
+	err := WriteFile(GPIO+"/unexport", Format(pin.GPIO))
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	pin.State = false
+}
 
 func FileExists(file string) bool {
 	_, err := os.Stat(file)
@@ -71,11 +103,13 @@ func ReadFile(file string) ([]byte, error) {
 	return buf, nil
 }
 
-func format(args ...any) string {
+func Format(args ...any) string {
 	out := ""
 	for _, arg := range args {
 		if reflect.TypeOf(arg) == reflect.TypeFor[int]() {
 			out += strconv.Itoa(arg.(int))
+		} else if reflect.TypeOf(arg) == reflect.TypeFor[float64]() {
+			out += strconv.FormatFloat(arg.(float64), 'G', 5, 64)
 		} else {
 			out += arg.(string)
 		}
@@ -104,56 +138,49 @@ func Open(gpios ...int) error {
 		}
 	}
 	for _, pin := range gpios {
-		if err := WriteFile(format(GPIO, "/export"), format(OFFSET+pin)); err != nil && !strings.HasSuffix(err.Error(), "device or resource busy") {
+		NewPin(pin)
+		if err := WriteFile(Format(GPIO, "/export"), Format(FindPin(pin).GPIO)); err != nil && !strings.HasSuffix(err.Error(), "device or resource busy") {
 			return err
 		}
-		pins[OFFSET+pin] = new(Pin)
-		pins[OFFSET+pin].State = true
-		pins[OFFSET+pin].Value = -1
-		pins[OFFSET+pin].Direction = NONE
 	}
 	return nil
 }
 
 func Close(gpios ...int) error {
 	for _, pin := range gpios {
-		if err := WriteFile(GPIO+"/unexport", format(OFFSET+pin)); err != nil {
+		if err := WriteFile(GPIO+"/unexport", Format(FindPin(pin).GPIO)); err != nil {
 			return err
 		}
-		pins[OFFSET+pin].State = false
+		FindPin(pin).State = false
 	}
 	return nil
 }
 
 func CloseAll() error {
-	for gpio, pin := range pins {
-		err := WriteFile(GPIO+"/unexport", format(OFFSET+gpio))
-		if err != nil {
-			return err
-		}
-		pin.State = false
+	for _, pin := range pins {
+		ClosePin(pin.GPIO)
 	}
 	return nil
 }
 
 func Dir(pin int, mode Mode) error {
-	if err := WriteFile(format(GPIO, "/gpio", OFFSET+pin, "/direction"), string(mode)); err != nil {
+	if err := WriteFile(Format(GPIO, "/gpio", FindPin(pin).GPIO, "/direction"), string(mode)); err != nil {
 		return err
 	}
-	pins[OFFSET+pin].Direction = mode
+	FindPin(pin).Direction = mode
 	return nil
 }
 
 func Write(pin int, value any) error {
-	if pins[OFFSET+pin].Direction != OUTPUT {
+	if FindPin(pin).Direction != OUTPUT {
 		if err := Dir(pin, OUTPUT); err != nil {
 			return err
 		}
 	}
-	if err := WriteFile(format(GPIO, "/gpio", OFFSET+pin, "/value"), format(value)); err != nil {
+	if err := WriteFile(Format(GPIO, "/gpio", FindPin(pin).GPIO, "/value"), Format(value)); err != nil {
 		return err
 	}
-	pins[OFFSET+pin].Value = value
+	FindPin(pin).Value = value
 	return nil
 }
 

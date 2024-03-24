@@ -177,15 +177,14 @@ func main() {
 		CLKDelay: 500,
 	}
 
-	// gpio.Test = true
-
-	arm.InitServos()
+	// arm.InitServos()
 	// servo.Open()
+	arm.OpenServo()
 	arm.InitRegisters()
 	registers.Open()
+	registers.NoConnect()
 	arm.InitMotors()
 	defer arm.CloseMotors()
-	// arm.InitKinematics()
 
 	if len(os.Args) > 1 {
 		_, err := os.Stat(os.Args[1])

@@ -88,6 +88,14 @@ func (r *Register) STCPPulse() {
 	time.Sleep(time.Microsecond * time.Duration(r.CLKDelay))
 }
 
+func (r *Register) NoConnect() {
+	if err := gpio.Write(r.MR, 1); err != nil {
+		fmt.Println(err)
+		return
+	}
+	r.STCPPulse()
+}
+
 func (r *Register) Write(bits []uint) {
 	for _, b := range bits {
 		if b == 1 {
