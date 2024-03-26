@@ -2,7 +2,6 @@ package arm
 
 import "math"
 
-// in radians
 type Angle float64
 
 func (a Angle) Radians() float64 {

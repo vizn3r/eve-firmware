@@ -155,7 +155,6 @@ func main() {
 
 	fmt.Print(ASCII + "\n\nEVE Firmware " + VERSION + "\nby vizn3r 2023\n\n")
 
-	// servo := arm.Servo{Pin: 18}
 	registers := arm.Register{
 		DS:   20,
 		MR:   21,

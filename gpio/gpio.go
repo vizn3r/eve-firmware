@@ -197,39 +197,3 @@ func Low(pin int) error {
 	}
 	return nil
 }
-
-// func High(pin int) error {
-// 	if err := Write(pin, "1"); err != nil {
-// 		return err
-// 	}
-// 	return nil
-// }
-//
-// func Low(pin int) error {
-// 	if err := Write(pin, "0"); err != nil {
-// 		return err
-// 	}
-// 	return nil
-// }
-//
-// func Write(pin int, value string) error {
-// 	if err := Dir(pin, OUTPUT); err != nil {
-// 		return err
-// 	}
-// 	err := WriteFile(GPIO+"/gpio"+fmt.Sprintf("%d", OFFSET+pin)+"/value", value)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	return nil
-// }
-//
-// func Read(pin int) (string, error) {
-// 	if err := Dir(pin, INPUT); err != nil {
-// 		return "", err
-// 	}
-// 	b, err := ReadFile(GPIO + "/gpio" + strconv.Itoa(OFFSET+pin) + "/value")
-// 	if err != nil {
-// 		return "", err
-// 	}
-// 	return string(b), nil
-// }

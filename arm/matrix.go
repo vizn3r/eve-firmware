@@ -13,9 +13,7 @@ type Matrix struct {
 	d [][]float64 // Data
 }
 
-//
 // Matrix MANIPULATION
-//
 
 // Make a new Matrix with rows and cols
 func NewMtx(rows int, cols int) Matrix {
@@ -177,9 +175,7 @@ func Map(m Matrix, fn func(float64) float64) Matrix {
 	return o
 }
 
-//
 // Matrix OPERATIONS
-//
 
 // Add i to every num in Matrix
 func (m *Matrix) Add(i float64) {

@@ -9,7 +9,6 @@ import (
 func ParseJSON(file string, data any) {
 	_, err := os.Stat(file)
 	if os.IsNotExist(err) {
-		// log.Println("")
 		return
 	}
 	byte, err := os.ReadFile(file)
