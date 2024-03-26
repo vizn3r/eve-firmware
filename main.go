@@ -16,12 +16,12 @@ import (
 	"sync"
 )
 
-const VERSION = "v0.0.6"
+const VERSION = "v1.0.0"
 
 const ASCII = "\n" + `_____________    ____________       __________________________ ______  ______       _________ ________ __________
 ___  ____/__ |  / /___  ____/       ___  ____/____  _/___  __ \___   |/  /__ |     / /___    |___  __ \___  ____/
 __  __/   __ | / / __  __/          __  /_     __  /  __  /_/ /__  /|_/ / __ | /| / / __  /| |__  /_/ /__  __/   
-_  /___   __ |/ /  _  /___          _  __/    __/ /   _  _, _/ _  /  / /  __ |/ |/ /  _  ___ |_  _, _/ _  /___   
+_/___   __ |/ /  _  /___          _  __/    __/ /   _  _, _/ _  /  / /  __ |/ |/ /  _  ___ |_  _, _/ _  /___   
 /_____/   _____/   /_____/          /_/       /___/   /_/ |_|  /_/  /_/   ____/|__/   /_/  |_|/_/ |_|  /_____/`
 
 func Clear() {
@@ -142,18 +142,6 @@ func main() {
 						return ""
 					},
 				},
-				// {
-				// 	NumArgs: 2,
-				// 	Desc:    "Read pin value",
-				// 	Args:    "<pin>",
-				// 	Func: func(c cmds.CommandCtx) string {
-				// 		if out, err := gpio.Read(c.IntArgs[0]); err != nil {
-				// 			return err.Error()
-				// 		} else {
-				// 			return out
-				// 		}
-				// 	},
-				// },
 			},
 		},
 	)
@@ -177,8 +165,7 @@ func main() {
 		CLKDelay: 500,
 	}
 
-	// arm.InitServos()
-	// servo.Open()
+	arm.InitServo()
 	arm.OpenServo()
 	arm.InitRegisters()
 	registers.Open()

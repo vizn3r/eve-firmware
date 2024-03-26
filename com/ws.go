@@ -66,6 +66,8 @@ func StartWS(wg *sync.WaitGroup) {
 	log.Fatal(app.Listen(":8080"))
 }
 
+var EE_ANGLE = 0.0
+
 func ResolveController(data string) {
 	dataArr := strings.Split(data, "/")
 	intArr := []int{}
@@ -74,13 +76,25 @@ func ResolveController(data string) {
 		intArr = append(intArr, num)
 	}
 
+	if intArr[0] == 1 {
+		if EE_ANGLE < 180 {
+			EE_ANGLE += 0.01
+		}
+		arm.SetAngle(EE_ANGLE)
+	} else if intArr[0] == 4 {
+		if EE_ANGLE > 0 {
+			EE_ANGLE -= 0.01
+		}
+		arm.SetAngle(EE_ANGLE)
+	}
+
 	// Move motors based on controller input
 	for i, mot := range arm.MOTORS {
-		data := intArr[i]
+		data := intArr[i+1]
 		if Positive(data) > 10000 && !mot.IsRunning() {
-			val := arm.MapValue(float64(Positive(data)), 10000, 32768, 100000, 1)
+			val := arm.MapValue(float64(Positive(data)), 10000, 32768, 1000000, 10000)
 			if i < 3 {
-				val /= 1000
+				val /= 100000
 			}
 			if err := gpio.Write(mot.Dir, int(Dir(data))); err != nil {
 				fmt.Println("Error setting direction:", err)
